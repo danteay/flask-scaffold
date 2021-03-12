@@ -1,0 +1,12 @@
+flask~=1.1.2
+flask-session~=0.3.2
+Jinja2~=2.11.3
+elasticlogger~=2.0.3
+pyyaml~=5.4.1
+boto3~=1.17.24
+fastjsonschema~=2.15.0
+requests~=2.25.1
+pymongo~=3.11.3
+dnspython~=2.1.0
+psycopg2-binary~=2.8.6
+redis~=3.5.3

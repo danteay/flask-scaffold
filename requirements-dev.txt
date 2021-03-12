@@ -1,0 +1,5 @@
+pytest~=6.2.2
+yapf~=0.30.0
+radon~=4.5.0
+pylint~=2.7.2
+openapi-spec-validator~=0.3.0

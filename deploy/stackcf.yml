@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: App stack
+
+Parameters:
+  AppName:
+    Type: String
+    Description: Application name
+
+  ClusterName:
+    Type: String
+    Description: Name of the exported cluster to deloy the application
+
+  ContainerPort:
+    Type: Number
+    Description: Container port that will be exposed by the application
+
+  DockerImage:
+    Type: String
+    Description: Tagged image to update service
+
+Resources:
+  TargetGroup:
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /ping
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 10
+      Matcher:
+        HttpCode: "200-299"
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !ImportValue VPC
+
+  LoadBalancer:
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    Properties:
+      Name: !Ref AppName
+      SecurityGroups:
+        - "Fn::ImportValue": LoadBalancerSecurityGroup
+      Subnets:
+        - "Fn::ImportValue": Subnet1
+        - "Fn::ImportValue": Subnet2
+
+  LoadBalancerListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  ListenerRule:
+    Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - /*
+      ListenerArn: !Ref LoadBalancerListener
+      Priority: 2
+
+  Task:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      ContainerDefinitions:
+        - Name: !Ref AppName
+          Image: !Ref DockerImage
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: ecs
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Ref AppName
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+              Protocol: tcp
+      Cpu: 256
+      ExecutionRoleArn: !ImportValue ECSTaskExecutionRole
+      Family: !Ref AppName
+      Memory: 512
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+
+  Service:
+    Type: "AWS::ECS::Service"
+    DependsOn: ListenerRule
+    Properties:
+      Cluster: !Ref ClusterName
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      DesiredCount: 1
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: !Ref AppName
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn: !Ref TargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - "Fn::ImportValue": ContainerSecurityGroup
+          Subnets:
+            - "Fn::ImportValue": Subnet1
+            - "Fn::ImportValue": Subnet2
+      TaskDefinition: !Ref Task
+
+Outputs:
+  ApiEndpoint:
+    Description: Application internal endpoint
+    Value: !Join ['', ['http://', !GetAtt LoadBalancer.DNSName]]
+    Export:
+      Name: !Join ['-', [!Ref AppName, 'Endpoint']]

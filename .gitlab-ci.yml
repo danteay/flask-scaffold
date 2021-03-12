@@ -1,0 +1,103 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+.docker_vars: &docker_vars
+  DOCKER_DRIVER: overlay
+
+.trequirements: &reqs
+  before_script:
+    - pip3 install virtualenv
+    - make venv
+    - source venv/bin/activate
+    - make install
+
+.build: &build
+  image: gitlab/dind
+  stage: build
+  services:
+    - docker:dind
+  before_script:
+    - |
+      sh ./deploy/build.sh \
+        ${STAGE} \
+        ${APP_PORT} \
+        ${AWS_ACCESS_KEY_ID} \
+        ${AWS_SECRET_ACCESS_KEY} \
+        ${AWS_DEFAULT_REGION}
+  script:
+    - sh ./deploy/push.sh $(sh ./deploy/ecr_token.sh) $CI_COMMIT_SHORT_SHA
+
+.deploy: &deploy
+  image: gitlab/dind
+  stage: deploy
+  services:
+    - docker:dind
+  script:
+    - |
+      sh ./deploy/deploy.sh \
+        ${APP_NAME} \
+        ${AWS_ACCESS_KEY_ID} \
+        ${AWS_SECRET_ACCESS_KEY} \
+        ${AWS_DEFAULT_REGION} \
+        ${CLUSTER} \
+        ${APP_PORT} \
+        $CI_COMMIT_SHORT_SHA
+
+Lint:
+  image: python:3.8
+  <<: *reqs
+  stage: test
+  script:
+    - make lint
+
+Swagger Lint:
+  image: python:3.8
+  <<: *reqs
+  stage: test
+  script:
+    - make swagger_lint
+
+Unit Tests:
+  image: python:3.8
+  <<: *reqs
+  stage: test
+  script:
+    - make test
+
+Code Complexity:
+  image: python:3.8
+  <<: *reqs
+  stage: test
+  script:
+    - make complexity
+  allow_failure: true
+
+Build Prod:
+  <<: *build
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+  variables:
+    <<: *docker_vars
+    STAGE: "prod"
+    APP_PORT: "8000"
+
+Deploy Prod:
+  <<: *deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+  variables:
+    <<: *docker_vars
+    STAGE: "prod"
+    APP_NAME: "lift-pass-prod"
+    APP_PORT: "8000"
+    CLUSTER: "Cluster1"

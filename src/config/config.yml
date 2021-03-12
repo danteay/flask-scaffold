@@ -1,0 +1,35 @@
+APP_NAME: "flask-scaffold"
+LOG_LEVEL: "DEBUG"
+API_KEY: "api-key"
+
+MONGO_URL: ""
+MONGO_DB: ""
+
+POSTGRES_URL: ""
+POSTGRES_COMMIT: ""
+
+# SQLite driver integration
+#
+# SQLLite diver will find for a DB file from the root of the project, make sure that this file path covers a complete
+# path from the root folder to the specific file
+# SQLITE_FILE: "data/test.db"
+#
+# SQLLite flag to generate changes on database, if false any database operation of insert, update, or delete will not
+# being applied to the database.
+# SQLITE_COMMIT: "false"
+
+# Configuration to use redis driver class
+# REDIS_HOST: ""
+# REDIS_PASS: ""
+#
+# If redis db key is not set the driver will auto set to db = 0
+# REDIS_DB: "0"
+
+# Elasticlogger configurations for getting and integration with elastic search
+# ELASTIC_URL: ""
+# ELASTIC_INDEX: ""
+#
+# Elasticlogger sentry integration
+# SENTRY_URL: ""
+
+

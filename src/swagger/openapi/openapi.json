@@ -1,0 +1,71 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Flask scaffold",
+    "description": "Simple flask scaffold",
+    "contact": {
+      "email": "dante.aguilar41@gmail.com"
+    },
+    "version": "1.0.0"
+  },
+  "security": [],
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Ping",
+      "description": "Health check"
+    }
+  ],
+  "paths": {
+    "/ping": {
+      "get": {
+        "tags": ["Ping"],
+        "summary": "Get Price",
+        "description": "Simple endpoint to get health check",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetPrice"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "Authorization": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "uuid"
+      }
+    },
+    "requestBodies": {
+
+    },
+    "responses": {
+      "Ping": {
+        "description": "Ping response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "string",
+                  "example": "pong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+
+    }
+  }
+}
